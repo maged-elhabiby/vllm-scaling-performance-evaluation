@@ -1,0 +1,21 @@
+server:
+  host: "localhost"
+  port: 8000
+  api_base: "http://localhost:8000/v1"
+
+model:
+  # TODO: Set to the exact model name
+  name: "meta-llama/Llama-3.1-8B-Instruct"
+  max_tokens: 128       # fixed output length across all experiments
+  temperature: 0.0      # greedy decoding - deterministic output
+  top_p: 1.0
+
+benchmark:
+  warmup_requests: 10          # requests sent before measurement begins (discarded)
+  test_duration_sec: 60        # measurement window per configuration
+  request_timeout_sec: 120     # per-request hard timeout
+  iterations: 3                # independent runs per (prompt_len, concurrency) cell
+
+output:
+  results_dir: "results"
+  save_raw: true               # save per-request JSON records

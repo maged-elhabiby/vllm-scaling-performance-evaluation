@@ -1,0 +1,24 @@
+# Full factorial design: prompt_lengths x concurrency_levels
+# 6 x 6 = 36 cells, each run 3 times = 108 total runs
+
+prompt_lengths:
+  - 128
+  - 512
+  - 1024
+  - 2048
+  - 4096
+  - 8192
+
+concurrency_levels:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 16
+  - 32
+
+# Randomize the order of to prevent bias from GPU or caching
+randomize_order: true
+
+# Seconds to sleep between runs to allow GPU state to settle
+inter_run_sleep_sec: 5

@@ -1,0 +1,14 @@
+# Feel free to mod as needed
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Benchmark outputs
+results/
+figures/
+
+# HuggingFace tokenizer cache
+.cache/
