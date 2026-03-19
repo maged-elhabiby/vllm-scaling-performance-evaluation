@@ -12,10 +12,10 @@ from prompts.templates import BASE_INSTRUCTION, QUESTION_SUFFIX, PADDING_PASSAGE
 
 
 def _load_tokenizer(model_name: str):
-    # TODO: might want to cache this to disk so we don't re-download on every run
+    # TODO: might want to cache this to disk so we don't re-download on every run -ADDRESSED
     try:
         from transformers import AutoTokenizer
-        return AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        return AutoTokenizer.from_pretrained(model_name, use_fast=True, cache_dir=".tokenizer_cache")
     except Exception:
         return None
 
@@ -75,9 +75,11 @@ def build_prompt(target: int, model_name: str, tokenizer=None, cache: Optional[d
         return cache[target]
 
     if tokenizer is None:
-        tokenizer = _load_tokenizer(model_name)
+        raise RuntimeError(
+            f'Tokenizer not available for model "{model_name}", cannot build prompt with exact token count. '
+        )
 
-    prompt = _build_with_tokenizer(target, tokenizer) if tokenizer else _build_heuristic(target)
+    prompt = _build_with_tokenizer(target, tokenizer)
 
     if cache is not None:
         cache[target] = prompt
@@ -88,8 +90,10 @@ def build_prompt_cache(token_lengths: list[int], model_name: str) -> dict[int, s
     """Build and return prompts for all target lengths. Call once before the experiment."""
     tokenizer = _load_tokenizer(model_name)
     if tokenizer is None:
-        # TODO: should this be a hard failure instead? off-by-N tokens would skew results
-        print("WARNING: tokenizer not available, falling back to char-based heuristic", file=sys.stderr)
+        # TODO: should this be a hard failure instead? off-by-N tokens would skew results - ADDRESSED
+        raise RuntimeError(
+        f"Tokenizer could not be loaded for model '{model_name}'. A working tokenizer is required for exact token-count control."
+    )
 
     cache: dict[int, str] = {}
     for length in token_lengths:
