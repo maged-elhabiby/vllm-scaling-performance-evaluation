@@ -149,7 +149,41 @@ def plot_error_heatmap(summary: pd.DataFrame, out_path: Path | None = None) -> p
         out_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(out_path, bbox_inches="tight")
     return fig
+def plot_ttft_vs_length(
+        summary: pd.DataFrame,
+        out_path: Path | None = None,
 
+) -> plt.Figure:
+    fig, ax = plt.subplots(figsize = (9, 5))
+    color_cycle = plt.cm.tab10(np.linspace(0, 1, len(CONCURRENCY_LEVELS)))
+    for color, cl in zip(color_cycle, CONCURRENCY_LEVELS):
+        sub = summary[summary["concurrency"] == cl].sort_values("prompt_len")
+        
+        if sub.empty or "mean_ttft_mean" not in sub.columns:
+            continue
+        ax.plot(sub["prompt_len"], sub["mean_ttft_mean"], marker="o", label=f"{cl} conc", color=color)
+        if "mean_ttft_lo" in sub.columns and "mean_ttft_hi" in sub.columns:
+
+            ax.fill_between(
+                sub["prompt_len"],
+                sub["mean_ttft_lo"], sub["mean_ttft_hi"],
+                alpha=0.15, color=color,
+            )
+
+    ax.set_xscale("log", base=2)
+    ax.set_xticks(PROMPT_LENGTHS)
+    ax.xaxis.set_major_formatter(ticker.ScalarFormatter())
+    ax.set_xlabel("Prompt Length (tokens)")
+    ax.set_ylabel("Mean TTFT (s)")
+    ax.set_title("Mean TTFT vs Prompt Length")
+    ax.legend(title="Concurrency", bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=9)
+    ax.grid(True, which="both", alpha=0.3)
+    fig.tight_layout()
+    if out_path:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out_path, bbox_inches="tight")
+    return fig
+    
 
 def generate_all(results_dir: str | Path, out_dir: str | Path, confidence: float = 0.95) -> None:
     results_dir = Path(results_dir)
@@ -163,7 +197,9 @@ def generate_all(results_dir: str | Path, out_dir: str | Path, confidence: float
     print(f"  {len(df)} runs aggregated into {len(summary)} cells.")
 
     # TODO: add TTFT vs prompt_length line plots (fixed concurrency slices)
-    # to show how prefill cost scales with context length
+    # to show how prefill cost scales with context length - ADDRESSED
+    print("  Plotting TTFT vs prompt length...")
+    plot_ttft_vs_length(summary, out_path=out_dir / "line_ttft_vs_prompt_length.png")
     specs = [
         # (metric, title, fmt, cmap, ylabel, log_y)
         ("mean_latency",        "Mean E2E Latency (s)",     ".2f", "YlOrRd", "Latency (s)", False),
