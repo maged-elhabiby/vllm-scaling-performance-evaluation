@@ -1,107 +1,77 @@
 # vLLM Scaling Benchmark
 
-Performance evaluation of [vLLM](https://github.com/vllm-project/vllm) under variable workloads.
-Measures latency, throughput, and reliability across a full context length x concurrency grid.
+Performance evaluation of [vLLM](https://github.com/vllm-project/vllm) under variable prompt length and request concurrency.
+
+This project measures latency, throughput, and reliability across a full prompt length x concurrency grid to characterize how vLLM inference performance changes under increasing workload pressure. The benchmark was designed for the SENG 533 final project and evaluates the interaction between prompt length, concurrency, KV-cache pressure, and GPU resource contention.
 
 ## Project Structure
 
-```
+```text
 configs/
   base.yaml              # server URL, model, generation params, benchmark settings
   experiment_grid.yaml   # prompt lengths, concurrency levels, run options
+
 prompts/
   templates.py           # padding text used to fill prompts to target length
   prompt_builder.py      # builds prompts to exact token counts via HF tokenizer
+
 benchmark/
   metrics.py             # RequestResult dataclass + aggregation helpers
-  load_generator.py      # async HTTP load generator (streaming, TTFT measurement)
-  runner.py              # experiment orchestrator (full factorial, randomised order)
+  load_generator.py      # async HTTP load generator with streaming + TTFT measurement
+  runner.py              # experiment orchestrator with full factorial + randomized order
+
 analysis/
   stats.py               # confidence intervals, outlier detection, CSV aggregation
   visualize.py           # heatmaps, line plots, error-bar plots
-results/                 # output directory for raw JSON + aggregated CSV
-figures/                 # output directory for generated plots
+
+results/                 # raw JSON outputs + aggregated CSV summaries
+figures/                 # generated heatmaps and plots
+docs/                    # docs
 ```
 
 ## Experimental Design
+
+The benchmark uses a full factorial experiment over prompt length and request concurrency.
 
 | Factor | Levels |
 |---|---|
 | Prompt length (tokens) | 128, 512, 1024, 2048, 4096, 8192 |
 | Concurrency | 1, 2, 4, 8, 16, 32 |
-| Iterations per cell | 3 (randomised run order) |
+| Iterations per cell | 3 |
 | Fixed output tokens | 128 |
+| Decoding strategy | Greedy decoding |
+| Temperature | 0.0 |
+| Run order | Randomized |
+| Warmup | 10 requests before each measurement cell |
 
-Total runs: 6 x 6 x 3 = 108
+Total runs:
+
+```text
+6 prompt lengths x 6 concurrency levels x 3 iterations = 108 runs
+```
 
 ## Metrics
 
 | Category | Metric |
 |---|---|
-| Latency | mean, P50, P95, P99 end-to-end |
+| Latency | mean, P50, P95, P99 end-to-end latency |
 | TTFT | mean, P95, P99 time-to-first-token |
 | Throughput | requests/sec (RPS), tokens/sec (TPS) |
 | Reliability | error rate, timeout rate |
 
-## Setup
+## Infrastructure
 
-### 1. Install dependencies
+The benchmark was run using a two-instance AWS setup:
 
-```bash
-pip install -r requirements.txt
-```
+| Component | Configuration |
+|---|---|
+| vLLM server | AWS EC2 g5.xlarge |
+| GPU | NVIDIA A10G |
+| GPU memory | 24 GB VRAM |
+| Workload generator | Separate CPU-based EC2 instance |
+| Network | Private IP communication inside shared AWS VPC |
+| Model | Qwen/Qwen2-7B-Instruct |
+| Precision | bfloat16 |
+| Max model length | 10,000 tokens |
 
-<!-- TODO: requirements.txt still needs to be committed -->
-
-### 2. Configure the server
-
-Edit [configs/base.yaml](configs/base.yaml):
-- Set `server.api_base` to your vLLM server address
-- Set `model.name` to match the exact model name loaded by vLLM
-
-### 3. Start vLLM (on the GPU machine)
-
-```bash
-python -m vllm.entrypoints.openai.api_server \
-    --model meta-llama/Llama-3.1-8B-Instruct \
-    --dtype bfloat16 \
-    --max-model-len 10000
-```
-
-### 4. Verify prompt lengths (optional)
-
-```bash
-python -m prompts.prompt_builder
-```
-
-## Running the Benchmark
-
-```bash
-# dry run - prints the plan without sending any requests
-python -m benchmark.runner --dry-run
-
-# full run
-python -m benchmark.runner
-```
-
-Results are saved to `results/pl{N}_c{C}_i{I}.json` per cell. If the run is interrupted, re-running will skip already-saved cells.
-
-## Analysis
-
-```bash
-# compute confidence intervals and flag outliers
-python -m analysis.stats --results-dir results --out results/summary.csv
-
-# generate all heatmaps and line plots
-python -m analysis.visualize --results-dir results --out-dir figures
-```
-
-Figures saved to `figures/`: heatmaps for each metric + line plots vs concurrency per metric.
-
-## Infrastructure Notes
-
-- vLLM server should run on the GPU machine
-- load generator (`benchmark/runner.py`) should run on a separate machine to avoid CPU/memory interference
-- restart the server between run sessions to prevent KV-cache residuals from contaminating measurements
-
-<!-- TODO: add notes on which GPU/machine we actually used once hardware is confirmed -->
+The vLLM server was hosted on the GPU-backed EC2 instance, while the load generator was run on a separate instance to avoid CPU, memory, and network interference with inference execution.
