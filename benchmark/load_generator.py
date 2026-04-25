@@ -38,6 +38,9 @@ async def _send_request(
         "stream": True,  # must be True to capture TTFT - non-streaming gives us nothing until the end
     }
 
+    # perf_counter is monotonic with sub-microsecond resolution — unlike time.time() it
+    # won't jump backward if NTP adjusts the system clock mid-run, which would silently
+    # corrupt latency samples by producing negative or artificially large durations.
     start = time.perf_counter()
     ttft: Optional[float] = None
     completion_tokens = 0
