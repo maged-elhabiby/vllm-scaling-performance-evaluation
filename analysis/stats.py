@@ -22,7 +22,9 @@ def load_results(results_dir: str | Path) -> pd.DataFrame:
     for path in sorted(results_dir.glob("pl*_c*_i*.json")):
         with open(path) as f:
             d = json.load(f)
-        d.pop("raw_results", None)  # don't load per-request records into the df
+        # raw_results holds per-request records and can be several MB per file — strip it
+        # before building the DataFrame to avoid loading gigabytes for large result sets.
+        d.pop("raw_results", None)
         records.append(d)
 
     if not records:
@@ -59,8 +61,11 @@ METRIC_COLS = [
 
 
 def aggregate_iterations(df: pd.DataFrame, confidence: float = 0.95) -> pd.DataFrame:
-    # collapse the 3 iterations per cell into mean ± CI columns
-    # output columns: prompt_len, concurrency, <metric>_mean, <metric>_lo, <metric>_hi
+    # Collapses the 3 iterations per (prompt_len, concurrency) cell into mean ± CI columns.
+    # Output schema: prompt_len, concurrency, <metric>_mean, <metric>_lo, <metric>_hi.
+    # The _lo and _hi bounds are consumed by visualize.py to shade confidence bands on
+    # line plots. A wide band signals that the 3 iterations disagreed, so those cells
+    # should be interpreted cautiously rather than treated as stable point estimates.
     rows = []
     for (pl, cl), grp in df.groupby(["prompt_len", "concurrency"]):
         row: dict = {"prompt_len": pl, "concurrency": cl, "n_iterations": len(grp)}
