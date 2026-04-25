@@ -6,9 +6,6 @@ __pycache__/
 venv/
 .env
 
-# Benchmark outputs
-results/
-figures/
 
 # HuggingFace tokenizer cache
 .cache/
