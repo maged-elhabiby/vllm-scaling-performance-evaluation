@@ -167,8 +167,13 @@ async def run_load(
     concurrency: int,
     test_duration_sec: float,
 ) -> tuple[list[RequestResult], float]:
-    # semaphore keeps exactly `concurrency` requests in flight at all times
-    # each worker loops and immediately fires a new request when the previous one finishes
+    # Closed-loop load model: concurrency is the fixed input, RPS is the measured output.
+    # Each worker fires the next request the instant the previous one returns, keeping
+    # exactly `concurrency` requests in flight at all times. This differs from an open-loop
+    # model (Poisson arrivals at a fixed rate) where RPS is the input and queue depth is
+    # the output. Implication: at low latency the server sustains high RPS; as latency
+    # rises (larger prompts, heavier concurrency), workers stall waiting for responses and
+    # RPS drops naturally — that degradation curve is what the benchmark is designed to capture.
     semaphore = asyncio.Semaphore(concurrency)
     results: list[RequestResult] = []
     stop_event = asyncio.Event()
