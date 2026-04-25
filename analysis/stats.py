@@ -61,7 +61,6 @@ METRIC_COLS = [
 def aggregate_iterations(df: pd.DataFrame, confidence: float = 0.95) -> pd.DataFrame:
     # collapse the 3 iterations per cell into mean ± CI columns
     # output columns: prompt_len, concurrency, <metric>_mean, <metric>_lo, <metric>_hi
-    # TODO: also track iteration-to-iteration variance as a stability signal
     rows = []
     for (pl, cl), grp in df.groupby(["prompt_len", "concurrency"]):
         row: dict = {"prompt_len": pl, "concurrency": cl, "n_iterations": len(grp)}

@@ -20,7 +20,6 @@ QUESTION_SUFFIX = (
 )
 
 # A natural-language passage used to pad prompts to the desired token count
-# TODO: CHANGE AND VALIDATE, GRABBED RANDOMLY ATM - CHANGED
 # Natural-language passages from Wikipeedia matching realistic LLM workloads.
 # Produced varied, non-repetitive token sequences that stress the KV-cache.
 # At 200 repititions - 120, 000 tokens - we have more than enough padding material to reach 100k tokens in the final prompt.

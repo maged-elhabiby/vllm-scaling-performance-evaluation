@@ -26,7 +26,7 @@ plt.rcParams.update({
     "figure.dpi": 150,
 })
 
-# keep these in sync with experiment_grid.yaml (TODO)
+# keep these in sync with experiment_grid.yaml
 PROMPT_LENGTHS = [128, 512, 1024, 2048, 4096, 8192]
 CONCURRENCY_LEVELS = [1, 2, 4, 8, 16, 32]
 
@@ -196,8 +196,6 @@ def generate_all(results_dir: str | Path, out_dir: str | Path, confidence: float
     summary.to_csv(out_dir / "summary.csv", index=False)
     print(f"  {len(df)} runs aggregated into {len(summary)} cells.")
 
-    # TODO: add TTFT vs prompt_length line plots (fixed concurrency slices)
-    # to show how prefill cost scales with context length - ADDRESSED
     print("  Plotting TTFT vs prompt length...")
     plot_ttft_vs_length(summary, out_path=out_dir / "line_ttft_vs_prompt_length.png")
     specs = [

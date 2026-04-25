@@ -97,8 +97,6 @@ async def _send_request(
 
     except asyncio.TimeoutError:
         end = time.perf_counter()
-        # TODO: distinguish between prompt-phase timeout vs generation-phase timeout
-        # right now we just know it timed out somewhere
         return RequestResult(
             request_id=request_id,
             prompt_tokens=prompt_tokens,
@@ -147,8 +145,6 @@ async def run_warmup(
 ) -> None:
     # sequential warmup - we don't want concurrent warmup requests inflating
     # the KV cache before the measurement window starts
-    # TODO: check if warmup with the same prompt length is actually sufficient
-    #       or if we need a mixed-length warmup to better prime the cache
     connector = aiohttp.TCPConnector(limit=0)
     async with aiohttp.ClientSession(connector=connector) as session:
         for i in range(n_warmup):
@@ -205,8 +201,6 @@ async def run_load(
 
         # wait for any in-flight requests to finish before we return
         # this means elapsed will be slightly longer than test_duration_sec
-        # TODO: decide if we should hard-cancel instead - right now a slow request
-        #       at the end of the window skews elapsed upward
         await asyncio.gather(*workers, return_exceptions=True)
         wall_end = time.perf_counter()
 

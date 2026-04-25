@@ -71,9 +71,6 @@ class RunSummary:
 
     elapsed_sec: float           # actual wall time of the measurement window
 
-    # TODO: add confidence intervals across iterations - need to aggregate
-    #       across the 3 iterations per cell before doing stats
-
     raw_results: list[RequestResult] = field(default_factory=list, repr=False)
 
     def to_dict(self, include_raw: bool = False) -> dict:

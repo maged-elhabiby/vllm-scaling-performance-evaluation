@@ -12,7 +12,6 @@ from prompts.templates import BASE_INSTRUCTION, QUESTION_SUFFIX, PADDING_PASSAGE
 
 
 def _load_tokenizer(model_name: str):
-    # TODO: might want to cache this to disk so we don't re-download on every run -ADDRESSED
     try:
         from transformers import AutoTokenizer
         return AutoTokenizer.from_pretrained(model_name, use_fast=True, cache_dir=".tokenizer_cache")
@@ -63,8 +62,7 @@ def _build_with_tokenizer(target: int, tokenizer) -> str:
 
 
 def _build_heuristic(target: int) -> str:
-    # ~4 chars per token is a reasonable estimate for English text (TODO: confirm)
-    # TODO: this will be off for models with different tokenization
+    # ~4 chars per token is a reasonable estimate for English text
     base = BASE_INSTRUCTION + QUESTION_SUFFIX
     needed = max(0, target * 4 - len(base))
     return BASE_INSTRUCTION + PADDING_PASSAGE_LONG[:needed] + QUESTION_SUFFIX
@@ -90,7 +88,6 @@ def build_prompt_cache(token_lengths: list[int], model_name: str) -> dict[int, s
     """Build and return prompts for all target lengths. Call once before the experiment."""
     tokenizer = _load_tokenizer(model_name)
     if tokenizer is None:
-        # TODO: should this be a hard failure instead? off-by-N tokens would skew results - ADDRESSED
         raise RuntimeError(
         f"Tokenizer could not be loaded for model '{model_name}'. A working tokenizer is required for exact token-count control."
     )

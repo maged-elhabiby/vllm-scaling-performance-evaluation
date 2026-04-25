@@ -113,8 +113,6 @@ async def run_experiment(
 
         # warmup before each cell, not just once at the start - we want the GPU
         # in a consistent state for every (prompt_len, concurrency) pair
-        # TODO: figure out if 10 warmup requests is enough for high concurrency cells
-        #       might need more at c=32 to actually saturate the scheduler
         await run_warmup(
             api_base, model_name, prompt, max_tokens,
             temperature, top_p, timeout, warmup_n,
@@ -139,7 +137,6 @@ async def run_experiment(
               f"p99={p99:7.2f}s  err={err:5.1f}%")
 
         # sleep between runs to let GPU memory/state settle
-        # TODO: is 5s enough? might want to add a health check ping instead of fixed sleep
         if inter_sleep > 0:
             await asyncio.sleep(inter_sleep)
 
